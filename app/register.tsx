@@ -6,7 +6,6 @@ export default function RegisterScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleRegister = () => {
     // Navigate to tabs (home) after registration
@@ -16,12 +15,15 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Sign up for Lumigram</Text>
+      <Text style={styles.title}>Atlas</Text>
+      <Text style={styles.subtitle}>SCHOOL</Text>
+      
+      <Text style={styles.heading}>Register</Text>
       
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="#8B9DC3"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -31,16 +33,9 @@ export default function RegisterScreen() {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor="#8B9DC3"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm Password"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
         secureTextEntry
       />
       
@@ -48,9 +43,12 @@ export default function RegisterScreen() {
         <Text style={styles.buttonText}>Create Account</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.linkText}>
-          Already have an account? Sign in
+      <TouchableOpacity 
+        style={styles.secondaryButton}
+        onPress={() => router.back()}
+      >
+        <Text style={styles.secondaryButtonText}>
+          Login to existing account
         </Text>
       </TouchableOpacity>
     </View>
@@ -62,47 +60,70 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
-    backgroundColor: "#fff",
+    padding: 30,
+    backgroundColor: "#00003C",
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#00003C",
+    fontSize: 64,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: 2,
+    marginBottom: -10,
   },
   subtitle: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 40,
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#3DDBBA",
+    letterSpacing: 8,
+    marginBottom: 60,
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: "400",
+    color: "#FFFFFF",
+    marginBottom: 30,
+    alignSelf: "flex-start",
   },
   input: {
     width: "100%",
-    height: 50,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
+    height: 60,
+    borderWidth: 2,
+    borderColor: "#3DDBBA",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    fontSize: 18,
+    color: "#FFFFFF",
+    backgroundColor: "transparent",
   },
   button: {
     width: "100%",
-    height: 50,
-    backgroundColor: "#00003C",
-    borderRadius: 8,
+    height: 60,
+    backgroundColor: "#3DDBBA",
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 10,
+    marginBottom: 15,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 16,
+    color: "#00003C",
+    fontSize: 20,
     fontWeight: "600",
   },
-  linkText: {
-    marginTop: 16,
-    color: "#00003C",
-    fontSize: 14,
+  secondaryButton: {
+    width: "100%",
+    height: 60,
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "#3DDBBA",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "400",
   },
 });
