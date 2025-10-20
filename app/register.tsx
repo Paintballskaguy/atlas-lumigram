@@ -2,21 +2,22 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-nativ
 import { useRouter } from "expo-router";
 import { useState } from "react";
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleLogin = () => {
-    // Navigate to tabs (home) after login
-    // Authentication validation will be implemented in part 2
+  const handleRegister = () => {
+    // Navigate to tabs (home) after registration
+    // Account creation and validation will be implemented in part 2
     router.replace("/(tabs)");
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Lumigram</Text>
-      <Text style={styles.subtitle}>Sign in to your account</Text>
+      <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.subtitle}>Sign up for Lumigram</Text>
       
       <TextInput
         style={styles.input}
@@ -35,13 +36,21 @@ export default function LoginScreen() {
         secureTextEntry
       />
       
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Sign In</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Confirm Password"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+      />
+      
+      <TouchableOpacity style={styles.button} onPress={handleRegister}>
+        <Text style={styles.buttonText}>Create Account</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity onPress={() => router.push("/register")}>
+      <TouchableOpacity onPress={() => router.back()}>
         <Text style={styles.linkText}>
-          Don't have an account? Sign up
+          Already have an account? Sign in
         </Text>
       </TouchableOpacity>
     </View>
