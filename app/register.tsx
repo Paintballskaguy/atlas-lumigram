@@ -1,129 +1,84 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { Tabs, useRouter } from "expo-router";
+import { TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
-export default function RegisterScreen() {
+export default function TabsLayout() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
-  const handleRegister = () => {
-    // Navigate to tabs (home) after registration
-    // Account creation and validation will be implemented in part 2
-    router.replace("/(tabs)");
+  const handleLogout = () => {
+    // Navigate back to login screen
+    router.replace("/");
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Atlas</Text>
-      <Text style={styles.subtitle}>SCHOOL</Text>
-      
-      <Text style={styles.heading}>Register</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#8B9DC3"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: "#3DDBBA",
+        tabBarInactiveTintColor: "#999",
+        headerStyle: {
+          backgroundColor: "#fff",
+        },
+        headerTitleStyle: {
+          fontSize: 24,
+          fontWeight: "bold",
+          color: "#000",
+        },
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={handleLogout}
+            style={{ marginRight: 16 }}
+          >
+            <Ionicons name="log-out-outline" size={28} color="#3DDBBA" />
+          </TouchableOpacity>
+        ),
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Home Feed",
+          tabBarLabel: "Home Feed",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
       />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#8B9DC3"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: "Search",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="search" size={size} color={color} />
+          ),
+        }}
       />
-      
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Create Account</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.secondaryButton}
-        onPress={() => router.back()}
-      >
-        <Text style={styles.secondaryButtonText}>
-          Login to existing account
-        </Text>
-      </TouchableOpacity>
-    </View>
+      <Tabs.Screen
+        name="add-post"
+        options={{
+          title: "Add Post",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="add-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          title: "Favorites",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="heart" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-    backgroundColor: "#00003C",
-  },
-  title: {
-    fontSize: 64,
-    fontWeight: "900",
-    color: "#FFFFFF",
-    letterSpacing: 2,
-    marginBottom: -10,
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#3DDBBA",
-    letterSpacing: 8,
-    marginBottom: 60,
-  },
-  heading: {
-    fontSize: 28,
-    fontWeight: "400",
-    color: "#FFFFFF",
-    marginBottom: 30,
-    alignSelf: "flex-start",
-  },
-  input: {
-    width: "100%",
-    height: 60,
-    borderWidth: 2,
-    borderColor: "#3DDBBA",
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    fontSize: 18,
-    color: "#FFFFFF",
-    backgroundColor: "transparent",
-  },
-  button: {
-    width: "100%",
-    height: 60,
-    backgroundColor: "#3DDBBA",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 15,
-  },
-  buttonText: {
-    color: "#00003C",
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    width: "100%",
-    height: 60,
-    backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "#3DDBBA",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "400",
-  },
-});
