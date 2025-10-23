@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import { TouchableOpacity, Text } from "react-native";
+import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function TabsLayout() {
@@ -13,14 +13,22 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#00003C",
+        tabBarActiveTintColor: "#3DDBBA",
         tabBarInactiveTintColor: "#999",
+        headerStyle: {
+          backgroundColor: "#fff",
+        },
+        headerTitleStyle: {
+          fontSize: 24,
+          fontWeight: "bold",
+          color: "#000",
+        },
         headerRight: () => (
           <TouchableOpacity
             onPress={handleLogout}
             style={{ marginRight: 16 }}
           >
-            <Ionicons name="log-out-outline" size={24} color="#00003C" />
+            <Ionicons name="log-out-outline" size={28} color="#3DDBBA" />
           </TouchableOpacity>
         ),
       }}
@@ -28,7 +36,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Home Feed",
+          tabBarLabel: "Home Feed",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -64,7 +73,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "My Profile",
+          title: "Profile",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),
