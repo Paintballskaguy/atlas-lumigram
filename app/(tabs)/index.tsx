@@ -20,7 +20,6 @@ export default function LoginScreen() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       // Navigate to tabs (home) after successful login
-      router.replace("/(tabs)");
     } catch (error: any) {
       // Handle different error codes
       let errorMessage = "An error occurred during login";
