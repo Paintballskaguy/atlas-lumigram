@@ -31,13 +31,8 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      // Navigate to tabs (home) after successful registration
-      Alert.alert("Success", "Account created successfully!", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/(tabs)")
-        }
-      ]);
+      // Auth context will automatically redirect to tabs
+      Alert.alert("Success", "Account created successfully!");
     } catch (error: any) {
       // Handle different error codes
       let errorMessage = "An error occurred during registration";
