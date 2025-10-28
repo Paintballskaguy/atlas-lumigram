@@ -2,7 +2,7 @@ import { Tabs, useRouter } from "expo-router";
 import { TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { signOut } from "firebase/auth";
-import { auth } from "../../firebaseconfig";
+import { auth } from "@/firebaseconfig";
 
 export default function TabsLayout() {
   const router = useRouter();

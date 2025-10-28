@@ -1,6 +1,6 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 
