@@ -1,74 +1,95 @@
-import { View, Text, StyleSheet, Alert, Dimensions } from "react-native";
-import { FlashList } from "@shopify/flash-list";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image } from "expo-image";
-import { homeFeed } from "../../placeholder";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "$f";
 
-const { width } = Dimensions.get("window");
+export default function LoginScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-interface Post {
-  id: string;
-  image: string;
-  caption: string;
-  createdBy: string;
-}
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password");
+      return;
+    }
 
-function PostItem({ post }: { post: Post }) {
-  const [showCaption, setShowCaption] = useState(false);
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // Navigate to tabs (home) after successful login
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      // Handle different error codes
+      let errorMessage = "An error occurred during login";
+      
+      if (error.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      } else if (error.code === "auth/user-disabled") {
+        errorMessage = "This account has been disabled";
+      } else if (error.code === "auth/user-not-found") {
+        errorMessage = "No account found with this email";
+      } else if (error.code === "auth/wrong-password") {
+        errorMessage = "Incorrect password";
+      } else if (error.code === "auth/invalid-credential") {
+        errorMessage = "Invalid email or password";
+      }
+      
+      Alert.alert("Login Failed", errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Long press gesture to show caption
-  const longPressGesture = Gesture.LongPress()
-    .minDuration(500)
-    .onStart(() => {
-      setShowCaption(true);
-    })
-    .onEnd(() => {
-      setShowCaption(false);
-    })
-    .runOnJS(true);
-
-  // Double tap gesture to favorite
-  const doubleTapGesture = Gesture.Tap()
-    .numberOfTaps(2)
-    .onEnd(() => {
-      Alert.alert("Double Tap", "Image favorited!");
-    })
-    .runOnJS(true);
-
-  // Combine gestures
-  const composedGesture = Gesture.Exclusive(doubleTapGesture, longPressGesture);
-
-  return (
-    <View style={styles.postContainer}>
-      <GestureDetector gesture={composedGesture}>
-        <View>
-          <Image
-            source={{ uri: post.image }}
-            style={styles.image}
-            contentFit="cover"
-          />
-          {showCaption && (
-            <View style={styles.captionOverlay}>
-              <Text style={styles.captionText}>{post.caption}</Text>
-            </View>
-          )}
-        </View>
-      </GestureDetector>
-    </View>
-  );
-}
-
-export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <FlashList
-        data={homeFeed}
-        renderItem={({ item }) => <PostItem post={item} />}
-        estimatedItemSize={400}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
+      <Text style={styles.title}>Atlas</Text>
+      <Text style={styles.subtitle}>SCHOOL</Text>
+      
+      <Text style={styles.heading}>Login</Text>
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#8B9DC3"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        editable={!loading}
       />
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="#8B9DC3"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        editable={!loading}
+      />
+      
+      <TouchableOpacity 
+        style={[styles.button, loading && styles.buttonDisabled]} 
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Signing in..." : "Sign in"}
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={styles.secondaryButton}
+        onPress={() => router.push("/register")}
+        disabled={loading}
+      >
+        <Text style={styles.secondaryButtonText}>
+          Create a new account
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -76,30 +97,75 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+    backgroundColor: "#00003C",
   },
-  postContainer: {
+  title: {
+    fontSize: 64,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: 2,
+    marginBottom: -10,
+  },
+  subtitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#3DDBBA",
+    letterSpacing: 8,
+    marginBottom: 60,
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: "400",
+    color: "#FFFFFF",
+    marginBottom: 30,
+    alignSelf: "flex-start",
+  },
+  input: {
+    width: "100%",
+    height: 60,
+    borderWidth: 2,
+    borderColor: "#3DDBBA",
+    borderRadius: 12,
+    paddingHorizontal: 20,
     marginBottom: 20,
+    fontSize: 18,
+    color: "#FFFFFF",
+    backgroundColor: "transparent",
   },
-  image: {
-    width: width - 16,
-    height: 400,
-    marginHorizontal: 8,
-    borderRadius: 16,
+  button: {
+    width: "100%",
+    height: 60,
+    backgroundColor: "#3DDBBA",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 15,
   },
-  captionOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 8,
-    right: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    padding: 16,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+  buttonDisabled: {
+    opacity: 0.6,
   },
-  captionText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
+  buttonText: {
+    color: "#00003C",
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  secondaryButton: {
+    width: "100%",
+    height: 60,
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "#3DDBBA",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "400",
   },
 });

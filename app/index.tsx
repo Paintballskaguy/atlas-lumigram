@@ -1,16 +1,46 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebaseconfig";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // Navigate to tabs (home) after login
-    // Authentication validation will be implemented in part 2
-    router.replace("/(tabs)");
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // Navigate to tabs (home) after successful login
+      router.replace("/(tabs)");
+    } catch (error: any) {
+      // Handle different error codes
+      let errorMessage = "An error occurred during login";
+      
+      if (error.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      } else if (error.code === "auth/user-disabled") {
+        errorMessage = "This account has been disabled";
+      } else if (error.code === "auth/user-not-found") {
+        errorMessage = "No account found with this email";
+      } else if (error.code === "auth/wrong-password") {
+        errorMessage = "Incorrect password";
+      } else if (error.code === "auth/invalid-credential") {
+        errorMessage = "Invalid email or password";
+      }
+      
+      Alert.alert("Login Failed", errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,6 +58,7 @@ export default function LoginScreen() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        editable={!loading}
       />
       
       <TextInput
@@ -37,15 +68,23 @@ export default function LoginScreen() {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        editable={!loading}
       />
       
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Sign in</Text>
+      <TouchableOpacity 
+        style={[styles.button, loading && styles.buttonDisabled]} 
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Signing in..." : "Sign in"}
+        </Text>
       </TouchableOpacity>
       
       <TouchableOpacity 
         style={styles.secondaryButton}
         onPress={() => router.push("/register")}
+        disabled={loading}
       >
         <Text style={styles.secondaryButtonText}>
           Create a new account
@@ -105,6 +144,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
     marginBottom: 15,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: "#00003C",

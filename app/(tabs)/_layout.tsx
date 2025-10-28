@@ -1,13 +1,21 @@
 import { Tabs, useRouter } from "expo-router";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebaseconfig";
 
 export default function TabsLayout() {
   const router = useRouter();
 
-  const handleLogout = () => {
-    // Navigate back to login screen
-    router.replace("/");
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // Navigate back to login screen after successful logout
+      router.replace("/");
+    } catch (error: any) {
+      Alert.alert("Error", "Failed to log out. Please try again.");
+      console.error("Logout error:", error);
+    }
   };
 
   return (
