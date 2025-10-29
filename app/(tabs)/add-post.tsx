@@ -1,11 +1,15 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, Keyboard, TouchableWithoutFeedback } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from "react-native";
 import { useState } from "react";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import { uploadImageAndCreatePost } from "../../services/postService";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function AddPostScreen() {
+  const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const pickImage = async () => {
     // Dismiss keyboard before opening image picker
@@ -24,7 +28,7 @@ export default function AddPostScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.8, // Reduce quality to optimize upload size
     });
 
     if (!result.canceled) {
@@ -32,20 +36,44 @@ export default function AddPostScreen() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     Keyboard.dismiss();
     
     if (!selectedImage) {
       Alert.alert("No Image", "Please select an image first.");
       return;
     }
+
+    if (!user) {
+      Alert.alert("Error", "You must be logged in to create a post.");
+      return;
+    }
     
-    // In part 2, this will actually save the post
-    Alert.alert("Success", "Post saved successfully!");
+    setUploading(true);
     
-    // Reset form
-    setSelectedImage(null);
-    setCaption("");
+    try {
+      // Upload image and create post
+      await uploadImageAndCreatePost(selectedImage, caption, user.uid);
+      
+      Alert.alert("Success", "Post created successfully!", [
+        {
+          text: "OK",
+          onPress: () => {
+            // Reset form after success
+            setSelectedImage(null);
+            setCaption("");
+          }
+        }
+      ]);
+    } catch (error: any) {
+      console.error("Error creating post:", error);
+      Alert.alert(
+        "Upload Failed", 
+        error.message || "Failed to create post. Please try again."
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleReset = () => {
@@ -71,6 +99,7 @@ export default function AddPostScreen() {
             style={styles.imageContainer} 
             onPress={pickImage}
             activeOpacity={0.8}
+            disabled={uploading}
           >
             {selectedImage ? (
               <Image
@@ -97,16 +126,34 @@ export default function AddPostScreen() {
             returnKeyType="done"
             blurOnSubmit={true}
             onSubmitEditing={Keyboard.dismiss}
+            editable={!uploading}
           />
 
           {/* Save Button */}
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Save</Text>
+          <TouchableOpacity 
+            style={[styles.saveButton, uploading && styles.buttonDisabled]} 
+            onPress={handleSave}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <View style={styles.uploadingContainer}>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.saveButtonText}>Uploading...</Text>
+              </View>
+            ) : (
+              <Text style={styles.saveButtonText}>Save</Text>
+            )}
           </TouchableOpacity>
 
           {/* Reset Button */}
-          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-            <Text style={styles.resetButtonText}>Reset</Text>
+          <TouchableOpacity 
+            style={styles.resetButton} 
+            onPress={handleReset}
+            disabled={uploading}
+          >
+            <Text style={[styles.resetButtonText, uploading && styles.textDisabled]}>
+              Reset
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </TouchableWithoutFeedback>
@@ -174,10 +221,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
+  buttonDisabled: {
+    backgroundColor: "#A8E6D7",
+    opacity: 0.7,
+  },
   saveButtonText: {
     color: "#fff",
     fontSize: 20,
     fontWeight: "600",
+  },
+  uploadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   resetButton: {
     width: "100%",
@@ -190,5 +246,8 @@ const styles = StyleSheet.create({
     color: "#333",
     fontSize: 18,
     fontWeight: "500",
+  },
+  textDisabled: {
+    color: "#999",
   },
 });

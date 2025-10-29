@@ -1,5 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDhJrRiafXTYNBJfVlaTlZSg0Y6fs_BMaI",
@@ -12,5 +14,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Use getAuth instead of initializeAuth - it handles React Native persistence automatically
+// Firebase services
 export const auth = getAuth(app);
+export const storage = getStorage(app);
+export const db = getFirestore(app);s
