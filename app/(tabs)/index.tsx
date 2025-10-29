@@ -3,7 +3,7 @@ import { FlashList } from "@shopify/flash-list";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useState, useEffect, useCallback } from "react";
 import { Image } from "expo-image";
-import { getPostsPaginated, Post } from "../services/postService";
+import { getPostsPaginated, Post } from "../_services/postService";
 import { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 
 const { width } = Dimensions.get("window");
@@ -158,8 +158,8 @@ export default function HomeScreen() {
       <FlashList
         data={posts}
         renderItem={({ item }) => <PostItem post={item} />}
-        estimatedItemSize={400}
         keyExtractor={(item) => item.id}
+        getItemType={() => "post"}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

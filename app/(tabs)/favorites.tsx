@@ -65,7 +65,6 @@ export default function FavoritesScreen() {
       <FlashList
         data={favoritesFeed}
         renderItem={({ item }) => <PostItem post={item} />}
-        estimatedItemSize={400}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
       />

@@ -2,8 +2,8 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvo
 import { useState } from "react";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { uploadImageAndCreatePost } from "../services/postService";
-import { useAuth } from "../contexts/AuthContext";
+import { uploadImageAndCreatePost } from "../_services/postService";
+import { useAuth } from "../_contexts/AuthContext";
 
 export default function AddPostScreen() {
   const { user } = useAuth();
@@ -25,7 +25,7 @@ export default function AddPostScreen() {
 
     // Launch image picker
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8, // Reduce quality to optimize upload size

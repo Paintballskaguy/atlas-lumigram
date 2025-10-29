@@ -1,179 +1,95 @@
-import { View, Text, StyleSheet, Alert, Dimensions, ActivityIndicator, RefreshControl } from "react-native";
-import { FlashList } from "@shopify/flash-list";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useState, useEffect, useCallback } from "react";
-import { Image } from "expo-image";
-import { getPostsPaginated } from "./services/postService";
-import { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
-import { Post } from "./services/postService";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebaseconfig";
 
-const { width } = Dimensions.get("window");
+export default function LoginScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-// Number of posts to load per page
-const PAGE_SIZE = 10;
-
-function PostItem({ post }: { post: Post }) {
-  const [showCaption, setShowCaption] = useState(false);
-
-  // Long press gesture to show caption
-  const longPressGesture = Gesture.LongPress()
-    .minDuration(500)
-    .onStart(() => {
-      setShowCaption(true);
-    })
-    .onEnd(() => {
-      setShowCaption(false);
-    })
-    .runOnJS(true);
-
-  // Double tap gesture to favorite
-  const doubleTapGesture = Gesture.Tap()
-    .numberOfTaps(2)
-    .onEnd(() => {
-      Alert.alert("Double Tap", "Added to favorites!");
-    })
-    .runOnJS(true);
-
-  // Combine gestures
-  const composedGesture = Gesture.Exclusive(doubleTapGesture, longPressGesture);
-
-  return (
-    <View style={styles.postContainer}>
-      <GestureDetector gesture={composedGesture}>
-        <View>
-          <Image
-            source={{ uri: post.imageUrl }}
-            style={styles.image}
-            contentFit="cover"
-          />
-          {showCaption && (
-            <View style={styles.captionOverlay}>
-              <Text style={styles.captionText}>{post.caption}</Text>
-              <Text style={styles.authorText}>By: {post.createdBy}</Text>
-              <Text style={styles.dateText}>
-                {new Date(post.createdAt).toLocaleDateString()}
-              </Text>
-            </View>
-          )}
-        </View>
-      </GestureDetector>
-    </View>
-  );
-}
-
-export default function HomeScreen() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-
-  // Fetch initial posts
-  const fetchPosts = async (refresh: boolean = false) => {
-    try {
-      if (refresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
-      const result = await getPostsPaginated(PAGE_SIZE);
-      setPosts(result.posts);
-      setLastVisible(result.lastVisible);
-      setHasMore(result.hasMore);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-      Alert.alert("Error", "Failed to load posts. Please try again.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  // Load more posts for pagination
-  const loadMorePosts = async () => {
-    if (!hasMore || loadingMore) {
+  const handleLogin = async () => {
+    // Validation
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
+    setLoading(true);
     try {
-      setLoadingMore(true);
-      const result = await getPostsPaginated(PAGE_SIZE, lastVisible);
+      await signInWithEmailAndPassword(auth, email, password);
+      // Auth context will automatically redirect to tabs
+    } catch (error: any) {
+      // Handle different error codes
+      let errorMessage = "An error occurred during login";
       
-      // Append new posts to existing posts
-      setPosts((prevPosts) => [...prevPosts, ...result.posts]);
-      setLastVisible(result.lastVisible);
-      setHasMore(result.hasMore);
-    } catch (error) {
-      console.error("Error loading more posts:", error);
-      Alert.alert("Error", "Failed to load more posts.");
+      if (error.code === "auth/invalid-credential") {
+        errorMessage = "Invalid email or password";
+      } else if (error.code === "auth/user-not-found") {
+        errorMessage = "No account found with this email";
+      } else if (error.code === "auth/wrong-password") {
+        errorMessage = "Incorrect password";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = "Too many failed attempts. Please try again later.";
+      }
+      
+      Alert.alert("Login Failed", errorMessage);
     } finally {
-      setLoadingMore(false);
+      setLoading(false);
     }
   };
 
-  // Handle pull-to-refresh
-  const handleRefresh = useCallback(() => {
-    fetchPosts(true);
-  }, []);
-
-  // Fetch posts on mount
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  // Render footer with loading indicator when loading more
-  const renderFooter = () => {
-    if (!loadingMore) return null;
-    
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#3DDBBA" />
-      </View>
-    );
-  };
-
-  // Initial loading state
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3DDBBA" />
-        <Text style={styles.loadingText}>Loading posts...</Text>
-      </View>
-    );
-  }
-
-  // Empty state
-  if (posts.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No posts yet!</Text>
-        <Text style={styles.emptySubtext}>Be the first to create a post</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <FlashList
-        data={posts}
-        renderItem={({ item }) => <PostItem post={item} />}
-        estimatedItemSize={400}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={["#3DDBBA"]}
-            tintColor="#3DDBBA"
-          />
-        }
-        onEndReached={loadMorePosts}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
+      <Text style={styles.title}>Atlas</Text>
+      <Text style={styles.subtitle}>SCHOOL</Text>
+      
+      <Text style={styles.heading}>Welcome Back</Text>
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#8B9DC3"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        editable={!loading}
       />
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="#8B9DC3"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        editable={!loading}
+      />
+      
+      <TouchableOpacity 
+        style={[styles.button, loading && styles.buttonDisabled]} 
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? "Logging in..." : "Login"}
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={styles.secondaryButton}
+        onPress={() => router.push("/register")}
+        disabled={loading}
+      >
+        <Text style={styles.secondaryButtonText}>
+          Don't have an account? Register
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -181,73 +97,75 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-  },
-  loadingContainer: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    padding: 30,
+    backgroundColor: "#00003C",
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#666",
+  title: {
+    fontSize: 64,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: 2,
+    marginBottom: -10,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 16,
-    color: "#666",
-  },
-  postContainer: {
-    marginBottom: 20,
-  },
-  image: {
-    width: width - 16,
-    height: 400,
-    marginHorizontal: 8,
-    borderRadius: 16,
-  },
-  captionOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 8,
-    right: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    padding: 16,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-  },
-  captionText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 4,
-  },
-  authorText: {
+  subtitle: {
+    fontSize: 20,
+    fontWeight: "600",
     color: "#3DDBBA",
-    fontSize: 14,
-    marginBottom: 2,
+    letterSpacing: 8,
+    marginBottom: 60,
   },
-  dateText: {
-    color: "#ccc",
-    fontSize: 12,
+  heading: {
+    fontSize: 28,
+    fontWeight: "400",
+    color: "#FFFFFF",
+    marginBottom: 30,
+    alignSelf: "flex-start",
   },
-  footerLoader: {
-    paddingVertical: 20,
-    alignItems: "center",
+  input: {
+    width: "100%",
+    height: 60,
+    borderWidth: 2,
+    borderColor: "#3DDBBA",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    fontSize: 18,
+    color: "#FFFFFF",
+    backgroundColor: "transparent",
+  },
+  button: {
+    width: "100%",
+    height: 60,
+    backgroundColor: "#3DDBBA",
+    borderRadius: 12,
     justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: "#00003C",
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  secondaryButton: {
+    width: "100%",
+    height: 60,
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "#3DDBBA",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "400",
   },
 });
