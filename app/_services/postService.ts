@@ -1,4 +1,5 @@
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { deleteDoc } from "firebase/firestore";
 import { 
   collection, 
   addDoc, 
@@ -304,5 +305,138 @@ export async function getPostsByUserPaginated(
   } catch (error) {
     console.error("Error fetching paginated user posts:", error);
     throw new Error("Failed to fetch paginated user posts");
+  }
+}
+
+// Add to the end of postService.ts
+
+/**
+ * Adds a post to user's favorites
+ * @param userId - User ID
+ * @param postId - Post ID to favorite
+ */
+export async function addFavorite(userId: string, postId: string): Promise<void> {
+  try {
+    // Use a composite ID to make it easy to check if already favorited
+    const favoriteId = `${userId}_${postId}`;
+    
+    await addDoc(collection(db, "favorites"), {
+      id: favoriteId,
+      userId,
+      postId,
+      createdAt: Timestamp.now(),
+    });
+  } catch (error) {
+    console.error("Error adding favorite:", error);
+    throw new Error("Failed to add favorite");
+  }
+}
+
+/**
+ * Removes a post from user's favorites
+ * @param userId - User ID
+ * @param postId - Post ID to unfavorite
+ */
+export async function removeFavorite(userId: string, postId: string): Promise<void> {
+  try {
+    const favoriteId = `${userId}_${postId}`;
+    
+    const favoritesQuery = query(
+      collection(db, "favorites"),
+      where("id", "==", favoriteId)
+    );
+    
+    const querySnapshot = await getDocs(favoritesQuery);
+    
+    // Delete all matching documents (should only be one)
+    const deletePromises = querySnapshot.docs.map(doc => 
+      deleteDoc(doc.ref)
+    );
+    
+    await Promise.all(deletePromises);
+  } catch (error) {
+    console.error("Error removing favorite:", error);
+    throw new Error("Failed to remove favorite");
+  }
+}
+
+/**
+ * Checks if a post is favorited by a user
+ * @param userId - User ID
+ * @param postId - Post ID to check
+ * @returns true if favorited, false otherwise
+ */
+export async function isFavorited(userId: string, postId: string): Promise<boolean> {
+  try {
+    const favoriteId = `${userId}_${postId}`;
+    
+    const favoritesQuery = query(
+      collection(db, "favorites"),
+      where("id", "==", favoriteId)
+    );
+    
+    const querySnapshot = await getDocs(favoritesQuery);
+    
+    return !querySnapshot.empty;
+  } catch (error) {
+    console.error("Error checking favorite:", error);
+    return false;
+  }
+}
+
+/**
+ * Gets all favorited posts for a user
+ * @param userId - User ID
+ * @returns Array of favorited posts
+ */
+export async function getFavoritePosts(userId: string): Promise<Post[]> {
+  try {
+    // First, get all favorite records for this user
+    const favoritesQuery = query(
+      collection(db, "favorites"),
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+    
+    const favoritesSnapshot = await getDocs(favoritesQuery);
+    
+    // Extract post IDs
+    const postIds = favoritesSnapshot.docs.map(doc => doc.data().postId);
+    
+    if (postIds.length === 0) {
+      return [];
+    }
+    
+    // Fetch all the posts
+    // Note: Firestore 'in' queries are limited to 10 items
+    const posts: Post[] = [];
+    
+    // Process in batches of 10
+    for (let i = 0; i < postIds.length; i += 10) {
+      const batch = postIds.slice(i, i + 10);
+      
+      const postsQuery = query(
+        collection(db, "posts"),
+        where("__name__", "in", batch)
+      );
+      
+      const postsSnapshot = await getDocs(postsQuery);
+      
+      postsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        posts.push({
+          id: doc.id,
+          imageUrl: data.imageUrl,
+          caption: data.caption,
+          createdAt: data.createdAt.toDate(),
+          createdBy: data.createdBy,
+        });
+      });
+    }
+    
+    return posts;
+  } catch (error) {
+    console.error("Error fetching favorite posts:", error);
+    throw new Error("Failed to fetch favorite posts");
   }
 }

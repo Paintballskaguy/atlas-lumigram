@@ -3,15 +3,16 @@ import { FlashList } from "@shopify/flash-list";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useState, useEffect, useCallback } from "react";
 import { Image } from "expo-image";
-import { getPostsPaginated, Post } from "../_services/postService";
+import { getPostsPaginated, Post, addFavorite } from "../_services/postService";
 import { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
+import { useAuth } from "../_contexts/AuthContext";
 
 const { width } = Dimensions.get("window");
 
 // Number of posts to load per page
 const PAGE_SIZE = 10;
 
-function PostItem({ post }: { post: Post }) {
+function PostItem({ post, userId }: { post: Post; userId: string }) {
   const [showCaption, setShowCaption] = useState(false);
 
   // Long press gesture to show caption
@@ -28,8 +29,13 @@ function PostItem({ post }: { post: Post }) {
   // Double tap gesture to favorite
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
-    .onEnd(() => {
-      Alert.alert("Double Tap", "Added to favorites!");
+    .onEnd(async () => {
+      try {
+        await addFavorite(userId, post.id);
+        Alert.alert("Added to Favorites", "Post added to your favorites!");
+      } catch (error) {
+        Alert.alert("Error", "Failed to add to favorites");
+      }
     })
     .runOnJS(true);
 
@@ -61,6 +67,7 @@ function PostItem({ post }: { post: Post }) {
 }
 
 export default function HomeScreen() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,7 +99,7 @@ export default function HomeScreen() {
 
   // Load more posts for pagination
   const loadMorePosts = async () => {
-    if (!hasMore || loadingMore) {
+    if (!hasMore || loadingMore || !lastVisible) {
       return;
     }
 
@@ -153,13 +160,20 @@ export default function HomeScreen() {
     );
   }
 
+  if (!user) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>Please log in</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <FlashList
         data={posts}
-        renderItem={({ item }) => <PostItem post={item} />}
+        renderItem={({ item }) => <PostItem post={item} userId={user.uid} />}
         keyExtractor={(item) => item.id}
-        getItemType={() => "post"}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -176,6 +190,7 @@ export default function HomeScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
