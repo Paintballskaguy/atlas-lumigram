@@ -1,12 +1,16 @@
 import { View, Text, StyleSheet, Alert, Dimensions, ActivityIndicator, RefreshControl } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Image } from "expo-image";
-import { getAllPosts } from "./services/postService";
-import { Post } from "./types/Post";
+import { getPostsPaginated } from "./services/postService";
+import { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
+import { Post } from "./services/postService";
 
 const { width } = Dimensions.get("window");
+
+// Number of posts to load per page
+const PAGE_SIZE = 10;
 
 function PostItem({ post }: { post: Post }) {
   const [showCaption, setShowCaption] = useState(false);
@@ -61,11 +65,23 @@ export default function HomeScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
 
-  const fetchPosts = async () => {
+  // Fetch initial posts
+  const fetchPosts = async (refresh: boolean = false) => {
     try {
-      const fetchedPosts = await getAllPosts();
-      setPosts(fetchedPosts);
+      if (refresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      const result = await getPostsPaginated(PAGE_SIZE);
+      setPosts(result.posts);
+      setLastVisible(result.lastVisible);
+      setHasMore(result.hasMore);
     } catch (error) {
       console.error("Error fetching posts:", error);
       Alert.alert("Error", "Failed to load posts. Please try again.");
@@ -75,15 +91,50 @@ export default function HomeScreen() {
     }
   };
 
+  // Load more posts for pagination
+  const loadMorePosts = async () => {
+    if (!hasMore || loadingMore) {
+      return;
+    }
+
+    try {
+      setLoadingMore(true);
+      const result = await getPostsPaginated(PAGE_SIZE, lastVisible);
+      
+      // Append new posts to existing posts
+      setPosts((prevPosts) => [...prevPosts, ...result.posts]);
+      setLastVisible(result.lastVisible);
+      setHasMore(result.hasMore);
+    } catch (error) {
+      console.error("Error loading more posts:", error);
+      Alert.alert("Error", "Failed to load more posts.");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Handle pull-to-refresh
+  const handleRefresh = useCallback(() => {
+    fetchPosts(true);
+  }, []);
+
+  // Fetch posts on mount
   useEffect(() => {
     fetchPosts();
   }, []);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchPosts();
+  // Render footer with loading indicator when loading more
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color="#3DDBBA" />
+      </View>
+    );
   };
 
+  // Initial loading state
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -93,6 +144,7 @@ export default function HomeScreen() {
     );
   }
 
+  // Empty state
   if (posts.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -118,6 +170,9 @@ export default function HomeScreen() {
             tintColor="#3DDBBA"
           />
         }
+        onEndReached={loadMorePosts}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
       />
     </View>
   );
@@ -189,5 +244,10 @@ const styles = StyleSheet.create({
   dateText: {
     color: "#ccc",
     fontSize: 12,
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

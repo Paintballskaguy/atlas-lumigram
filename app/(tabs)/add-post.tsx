@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvo
 import { useState } from "react";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { uploadImageAndCreatePost } from "../../services/postService";
+import { uploadImageAndCreatePost } from "../services/postService";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function AddPostScreen() {

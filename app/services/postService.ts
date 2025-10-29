@@ -1,7 +1,34 @@
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, query, orderBy, getDocs, Timestamp, where } from "firebase/firestore";
-import { storage, db } from "../firebaseconfig";
-import { NewPost, Post } from "../types/Post";
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  orderBy, 
+  getDocs, 
+  Timestamp, 
+  where, 
+  limit, 
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData
+} from "firebase/firestore";
+import { storage, db } from "../../firebaseconfig";
+
+// Define Post types inline to avoid Expo Router treating types folder as a route
+export interface Post {
+  id: string;
+  imageUrl: string;
+  caption: string;
+  createdAt: Date;
+  createdBy: string;
+}
+
+export interface NewPost {
+  imageUrl: string;
+  caption: string;
+  createdAt: Date;
+  createdBy: string;
+}
 
 /**
  * Uploads an image file to Firebase Storage
@@ -126,6 +153,67 @@ export async function getAllPosts(): Promise<Post[]> {
 }
 
 /**
+ * Fetches posts with pagination support
+ * @param pageSize - Number of posts to fetch per page (default: 10)
+ * @param lastDoc - Last document from previous page (for pagination)
+ * @returns Object containing posts array and last visible document
+ */
+export async function getPostsPaginated(
+  pageSize: number = 10,
+  lastDoc?: QueryDocumentSnapshot<DocumentData> | null
+): Promise<{
+  posts: Post[];
+  lastVisible: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}> {
+  try {
+    let postsQuery = query(
+      collection(db, "posts"),
+      orderBy("createdAt", "desc"),
+      limit(pageSize)
+    );
+
+    // If we have a last document, start after it for pagination
+    if (lastDoc) {
+      postsQuery = query(
+        collection(db, "posts"),
+        orderBy("createdAt", "desc"),
+        startAfter(lastDoc),
+        limit(pageSize)
+      );
+    }
+
+    const querySnapshot = await getDocs(postsQuery);
+
+    const posts: Post[] = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        imageUrl: data.imageUrl,
+        caption: data.caption,
+        createdAt: data.createdAt.toDate(),
+        createdBy: data.createdBy,
+      };
+    });
+
+    // Get the last visible document for next page
+    const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
+
+    // Check if there are more posts by checking if we got a full page
+    const hasMore = querySnapshot.docs.length === pageSize;
+
+    return {
+      posts,
+      lastVisible,
+      hasMore,
+    };
+  } catch (error) {
+    console.error("Error fetching paginated posts:", error);
+    throw new Error("Failed to fetch paginated posts");
+  }
+}
+
+/**
  * Fetches posts by a specific user
  * @param userId - User ID to filter posts
  * @returns Array of posts by the user
@@ -155,5 +243,66 @@ export async function getPostsByUser(userId: string): Promise<Post[]> {
   } catch (error) {
     console.error("Error fetching user posts:", error);
     throw new Error("Failed to fetch user posts");
+  }
+}
+
+/**
+ * Fetches posts by a specific user with pagination
+ * @param userId - User ID to filter posts
+ * @param pageSize - Number of posts to fetch per page (default: 10)
+ * @param lastDoc - Last document from previous page (for pagination)
+ * @returns Object containing posts array and last visible document
+ */
+export async function getPostsByUserPaginated(
+  userId: string,
+  pageSize: number = 10,
+  lastDoc?: QueryDocumentSnapshot<DocumentData> | null
+): Promise<{
+  posts: Post[];
+  lastVisible: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}> {
+  try {
+    let postsQuery = query(
+      collection(db, "posts"),
+      where("createdBy", "==", userId),
+      orderBy("createdAt", "desc"),
+      limit(pageSize)
+    );
+
+    if (lastDoc) {
+      postsQuery = query(
+        collection(db, "posts"),
+        where("createdBy", "==", userId),
+        orderBy("createdAt", "desc"),
+        startAfter(lastDoc),
+        limit(pageSize)
+      );
+    }
+
+    const querySnapshot = await getDocs(postsQuery);
+
+    const posts: Post[] = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        imageUrl: data.imageUrl,
+        caption: data.caption,
+        createdAt: data.createdAt.toDate(),
+        createdBy: data.createdBy,
+      };
+    });
+
+    const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
+    const hasMore = querySnapshot.docs.length === pageSize;
+
+    return {
+      posts,
+      lastVisible,
+      hasMore,
+    };
+  } catch (error) {
+    console.error("Error fetching paginated user posts:", error);
+    throw new Error("Failed to fetch paginated user posts");
   }
 }
